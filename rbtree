@@ -1,0 +1,379 @@
+using System;
+
+namespace ASDlab7
+{
+    internal class Program
+    {
+        public enum Color
+        {
+            Red,
+            Black
+        }
+
+        public class Node
+        {
+            public int Key { get; set; }
+            public Node Left { get; set; }
+            public Node Right { get; set; }
+            public Node Parent { get; set; }
+            public Color Color { get; set; }
+
+            public Node(int key)
+            {
+                Key = key;
+                Color = Color.Red;
+                Left = null;
+                Right = null;
+                Parent = null;
+            }
+        }
+
+        public class RedBlackTree
+        {
+            private Node root;
+
+            public RedBlackTree()
+            {
+                root = null;
+            }
+
+            public void Insert(int key)
+            {
+                // Вставка нового вузла у дерево
+                Node newNode = new Node(key);
+                if (root == null)
+                {
+                    root = newNode;
+                    root.Color = Color.Black;
+                    return;
+                }
+
+                Node current = root;
+                Node parent = null;
+
+                while (current != null)
+                {
+                    parent = current;
+                    if (newNode.Key < current.Key)
+                        current = current.Left;
+                    else
+                        current = current.Right;
+                }
+
+                newNode.Parent = parent;
+
+                if (newNode.Key < parent.Key)
+                    parent.Left = newNode;
+                else
+                    parent.Right = newNode;
+
+                // Балансування дерева після вставки
+                InsertFixup(newNode);
+            }
+
+            private void InsertFixup(Node node)
+            {
+                while (node != root && node.Parent.Color == Color.Red)
+                {
+                    if (node.Parent == node.Parent.Parent.Left)
+                    {
+                        Node uncle = node.Parent.Parent.Right;
+
+                        if (uncle != null && uncle.Color == Color.Red)
+                        {
+                            node.Parent.Color = Color.Black;
+                            uncle.Color = Color.Black;
+                            node.Parent.Parent.Color = Color.Red;
+                            node = node.Parent.Parent;
+                        }
+                        else
+                        {
+                            if (node == node.Parent.Right)
+                            {
+                                node = node.Parent;
+                                LeftRotate(node);
+                            }
+
+                            node.Parent.Color = Color.Black;
+                            node.Parent.Parent.Color = Color.Red;
+                            RightRotate(node.Parent.Parent);
+                        }
+                    }
+                    else
+                    {
+                        Node uncle = node.Parent.Parent.Left;
+
+                        if (uncle != null && uncle.Color == Color.Red)
+                        {
+                            node.Parent.Color = Color.Black;
+                            uncle.Color = Color.Black;
+                            node.Parent.Parent.Color = Color.Red;
+                            node = node.Parent.Parent;
+                        }
+                        else
+                        {
+                            if (node == node.Parent.Left)
+                            {
+                                node = node.Parent;
+                                RightRotate(node);
+                            }
+
+                            node.Parent.Color = Color.Black;
+                            node.Parent.Parent.Color = Color.Red;
+                            LeftRotate(node.Parent.Parent);
+                        }
+                    }
+                }
+
+                root.Color = Color.Black;
+            }
+
+            private void LeftRotate(Node node)
+            {
+                Node rightChild = node.Right;
+
+                // Перенесення лівого піддерева правого нащадка на місце правого нащадка поточного вузла
+                node.Right = rightChild.Left;
+
+                if (rightChild.Left != null)
+                    rightChild.Left.Parent = node;
+
+                // Зміна батьківського вузла правого нащадка на батьківський вузол поточного вузла
+                rightChild.Parent = node.Parent;
+
+                if (node == root)
+                    root = rightChild;
+                else if (node == node.Parent.Left)
+                    node.Parent.Left = rightChild;
+                else
+                    node.Parent.Right = rightChild;
+
+                // Перенесення поточного вузла на місце лівого нащадка його правого нащадка
+                rightChild.Left = node;
+                node.Parent = rightChild;
+            }
+
+            private void RightRotate(Node node)
+            {
+                Node leftChild = node.Left;
+
+                // Перенесення правого піддерева лівого нащадка на місце лівого нащадка поточного вузла
+                node.Left = leftChild.Right;
+
+                if (leftChild.Right != null)
+                    leftChild.Right.Parent = node;
+
+                // Зміна батьківського вузла лівого нащадка на батьківський вузол поточного вузла
+                leftChild.Parent = node.Parent;
+
+                if (node == root)
+                    root = leftChild;
+                else if (node == node.Parent.Right)
+                    node.Parent.Right = leftChild;
+                else
+                    node.Parent.Left = leftChild;
+
+                // Перенесення поточного вузла на місце правого нащадка його лівого нащадка
+                leftChild.Right = node;
+                node.Parent = leftChild;
+            }
+
+            public void PrintTree()
+            {
+                if (root == null)
+                    return;
+
+                PrintTree(root, "", true);
+            }
+
+            private void PrintTree(Node node, string indent, bool isLast)
+            {
+                if (node != null)
+                {
+                    Console.Write(indent);
+                    if (isLast)
+                    {
+                        Console.Write("R----");
+                        indent += "     ";
+                    }
+                    else
+                    {
+                        Console.Write("L----");
+                        indent += "|    ";
+                    }
+
+                    string color = node.Color == Color.Red ? "RED" : "BLACK";
+                    Console.WriteLine(node.Key + "(" + color + ")");
+
+                    PrintTree(node.Left, indent, false);
+                    PrintTree(node.Right, indent, true);
+                }
+            }
+            
+            private Node Search(int key)
+            {
+                // Пошук вузла за ключем
+                Node current = root;
+
+                while (current != null && current.Key != key)
+                {
+                    if (key < current.Key)
+                        current = current.Left;
+                    else
+                        current = current.Right;
+                }
+
+                return current;
+            }
+
+            private void Transplant(Node u, Node v)
+            {
+                // Заміна піддерева з коренем у на піддерево з коренем v
+                if (u.Parent == null)
+                    root = v;
+                else if (u == u.Parent.Left)
+                    u.Parent.Left = v;
+                else
+                    u.Parent.Right = v;
+
+                if (v != null)
+                    v.Parent = u.Parent;
+            }
+
+            private Node Minimum(Node node)
+            {
+                // Пошук вузла з мінімальним ключем у заданому піддереві
+                while (node.Left != null)
+                    node = node.Left;
+
+                return node;
+            }
+
+            private void DeleteFixup(Node node)
+            {
+                // Балансування дерева після видалення вузла
+                while (node != root && node.Color == Color.Black)
+                {
+                    if (node == node.Parent.Left)
+                    {
+                        Node sibling = node.Parent.Right;
+
+                        if (sibling.Color == Color.Red)
+                        {
+                            sibling.Color = Color.Black;
+                            node.Parent.Color = Color.Red;
+                            LeftRotate(node.Parent);
+                            sibling = node.Parent.Right;
+                        }
+
+                        if (sibling.Left.Color == Color.Black && sibling.Right.Color == Color.Black)
+                        {
+                            sibling.Color = Color.Red;
+                            node = node.Parent;
+                        }
+                        else
+                        {
+                            if (sibling.Right.Color == Color.Black)
+                            {
+                                sibling.Left.Color = Color.Black;
+                                sibling.Color = Color.Red;
+                                RightRotate(sibling);
+                                sibling = node.Parent.Right;
+                            }
+
+                            sibling.Color = node.Parent.Color;
+                            node.Parent.Color = Color.Black;
+                            sibling.Right.Color = Color.Black;
+                            LeftRotate(node.Parent);
+                            node = root;
+                        }
+                    }
+                    else
+                    {
+                        Node sibling = node.Parent.Left;
+
+                        if (sibling.Color == Color.Red)
+                        {
+                            sibling.Color = Color.Black;
+                            node.Parent.Color = Color.Red;
+                            RightRotate(node.Parent);
+                            sibling = node.Parent.Left;
+                        }
+
+                        if (sibling.Right.Color == Color.Black && sibling.Left.Color == Color.Black)
+                        {
+                            sibling.Color = Color.Red;
+                            node = node.Parent;
+                        }
+                        else
+                        {
+                            if (sibling.Left.Color == Color.Black)
+                            {
+                                sibling.Right.Color = Color.Black;
+                                sibling.Color = Color.Red;
+                                LeftRotate(sibling);
+                                sibling = node.Parent.Left;
+                            }
+
+                            sibling.Color = node.Parent.Color;
+                            node.Parent.Color = Color.Black;
+                            sibling.Left.Color = Color.Black;
+                            RightRotate(node.Parent);
+                            node = root;
+                        }
+                    }
+                }
+
+                node.Color = Color.Black;
+            }
+            
+            public void Remove(int key)
+            {
+                Node node = Search(key);
+
+                if (node == null)
+                {
+                    Console.WriteLine("Вузол з ключем {0} не знайдено.", key);
+                    return;
+                }
+
+                Node child, parent;
+                Color originalColor = node.Color;
+
+                if (node.Left == null)
+                {
+                    child = node.Right;
+                    Transplant(node, node.Right);
+                }
+                else if (node.Right == null)
+                {
+                    child = node.Left;
+                    Transplant(node, node.Left);
+                }
+                else
+                {
+                    Node minRight = Minimum(node.Right);
+                    originalColor = minRight.Color;
+                    child = minRight.Right;
+
+                    if (minRight.Parent == node)
+                        child.Parent = minRight;
+                    else
+                    {
+                        Transplant(minRight, minRight.Right);
+                        minRight.Right = node.Right;
+                        minRight.Right.Parent = minRight;
+                    }
+
+                    Transplant(node, minRight);
+                    minRight.Left = node.Left;
+                    minRight.Left.Parent = minRight;
+                    minRight.Color = node.Color;
+                }
+
+                if (originalColor == Color.Black)
+                    DeleteFixup(child);
+
+                Console.WriteLine("Вузол з ключем {0} видалено.", key);
+            }
+            
